@@ -20,12 +20,14 @@ class CPDataset(data.Dataset):
     """Dataset for CP-VTON.
     """
     # Define transformations for RGB images
+    # Added by HMA
     rgb_transform = Compose([
         ToTensor(),
         Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     ])
 
     # Define transformations for single-channel images
+    # Added by HMA
     gray_transform = Compose([
         ToTensor(),
         Lambda(lambda x: x.expand(3, -1, -1))  # Convert single-channel to 3-channel
@@ -43,10 +45,11 @@ class CPDataset(data.Dataset):
         self.fine_width = opt.fine_width
         self.radius = opt.radius
         self.data_path = osp.join(opt.dataroot, opt.datamode)
+        #(original code)
         #self.transform = transforms.Compose([  \
         #        transforms.ToTensor(),   \
         #        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-        #        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        #        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]) Commented by HMA
 
 
             # load data list
@@ -77,23 +80,25 @@ class CPDataset(data.Dataset):
             cm = Image.open(osp.join(self.data_path, 'warp-mask', c_name))
 
         # Check if 'c' is RGB or grayscale and apply transformation accordingly
+        # Added by HMA
         if c.mode == 'RGB':
             c = self.rgb_transform(c)  # Apply RGB transformations
         else:
             c = self.gray_transform(c)  # Convert grayscale to 3-channel if needed
             c = self.rgb_transform(c)  # Apply RGB normalization after conversion
 
-        #c = self.transform(c)  # [-1,1]
+        #c = self.transform(c)  # [-1,1] (original code)
         cm_array = np.array(cm)
         cm_array = (cm_array >= 128).astype(np.float32)
         cm = torch.from_numpy(cm_array) # [0,1]
         cm.unsqueeze_(0)
 
-        # person image 
+        # person image (original code)
         #im = Image.open(osp.join(self.data_path, 'image', im_name))
         #im = self.transform(im) # [-1,1]
 
         # Person image
+        # Added by HMA
         im = Image.open(osp.join(self.data_path, 'image', im_name))
         if im.mode == 'RGB':
             im = self.rgb_transform(im)  # Apply RGB transformations
@@ -113,21 +118,19 @@ class CPDataset(data.Dataset):
         parse_cloth = (parse_array == 5).astype(np.float32) + \
                 (parse_array == 6).astype(np.float32) + \
                 (parse_array == 7).astype(np.float32)
-       
+
         # shape downsample
         parse_shape = Image.fromarray((parse_shape*255).astype(np.uint8))
         parse_shape = parse_shape.resize((self.fine_width//16, self.fine_height//16), Image.BILINEAR)
         parse_shape = parse_shape.resize((self.fine_width, self.fine_height), Image.BILINEAR)
-        #shape = self.transform(parse_shape) # [-1,1]
+        #shape = self.transform(parse_shape) # [-1,1] (original code)
 
+        # Added by HMA
         if parse_shape.mode == 'RGB':
             shape = self.rgb_transform(parse_shape)  # Apply RGB transformations
         else:
             shape = self.gray_transform(parse_shape)  # Convert grayscale to 3-channel if needed
             #shape = self.rgb_transform(shape)  # Apply RGB normalization after conversion
-
-        #if shape.shape[0] == 24:
-        #    shape = shape[:22, :, :]  # Slice to keep only the first 22 channels
 
         phead = torch.from_numpy(parse_head) # [0,1]
         pcm = torch.from_numpy(parse_cloth) # [0,1]
@@ -157,18 +160,24 @@ class CPDataset(data.Dataset):
             if pointx > 1 and pointy > 1:
                 draw.rectangle((pointx-r, pointy-r, pointx+r, pointy+r), 'white', 'white')
                 pose_draw.rectangle((pointx-r, pointy-r, pointx+r, pointy+r), 'white', 'white')
+
+            #(original code)
             #one_map = self.transform(one_map)
             #pose_map[i] = one_map[0]
+
+            # Added by HMA
             one_map = self.rgb_transform(one_map) if one_map.mode == 'RGB' else self.gray_transform(one_map)
             pose_map[i] = one_map[0]
 
 
         # just for visualization
-        #im_pose = self.transform(im_pose)
+        #im_pose = self.transform(im_pose) (original code)
+
+        # Added by HMA
         im_pose = self.rgb_transform(im_pose) if im_pose.mode == 'RGB' else self.gray_transform(im_pose)
 
         # cloth-agnostic representation
-        agnostic = torch.cat([shape, im_h, pose_map], 0) 
+        agnostic = torch.cat([shape, im_h, pose_map], 0)
 
         if self.stage == 'GMM':
             im_g = Image.open('grid.png')
@@ -209,7 +218,7 @@ class CPDataLoader(object):
                 num_workers=opt.workers, pin_memory=True, sampler=train_sampler)
         self.dataset = dataset
         self.data_iter = self.data_loader.__iter__()
-       
+
     def next_batch(self):
         try:
             batch = self.data_iter.__next__()
@@ -222,7 +231,7 @@ class CPDataLoader(object):
 
 if __name__ == "__main__":
     print("Check the dataset for geometric matching module!")
-    
+
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataroot", default = "data")
@@ -235,7 +244,7 @@ if __name__ == "__main__":
     parser.add_argument("--shuffle", action='store_true', help='shuffle input data')
     parser.add_argument('-b', '--batch-size', type=int, default=4)
     parser.add_argument('-j', '--workers', type=int, default=1)
-    
+
     opt = parser.parse_args()
     dataset = CPDataset(opt)
     data_loader = CPDataLoader(opt, dataset)

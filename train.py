@@ -1,4 +1,3 @@
-
 #coding=utf-8
 import torch
 import torch.nn as nn
@@ -70,7 +69,7 @@ def train_gmm(opt, train_loader, model, board):
         im_c =  inputs['parse_cloth'].cuda()
         im_g = inputs['grid_image'].cuda()
 
-        # Before the forward pass
+        # Before the forward pass # Added by HMA
         #print(f"Agnostic shape: {agnostic.shape}, C shape: {c.shape}")
 
         grid, theta = model(agnostic, c)
@@ -190,7 +189,8 @@ def main():
         save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'tom_final.pth'))
     else:
         raise NotImplementedError('Model [%s] is not implemented' % opt.stage)
-        
+
+    # Added by HMA
     board.flush()
     board.close()
     print('Finished training %s, nameed: %s!' % (opt.stage, opt.name))

@@ -416,8 +416,10 @@ class GMM(nn.Module):
         self.gridGen = TpsGridGen(opt.fine_height, opt.fine_width, use_cuda=True, grid_size=opt.grid_size)
         
     def forward(self, inputA, inputB):
+        # Added by HMA
         if inputA.shape[1] == 24:
            inputA = inputA[:, :22, :, :]  # Slice to keep only the first 22 channels
+
         featureA = self.extractionA(inputA)
         featureB = self.extractionB(inputB)
         featureA = self.l2norm(featureA)

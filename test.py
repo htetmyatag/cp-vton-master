@@ -160,6 +160,7 @@ def main():
     else:
         raise NotImplementedError('Model [%s] is not implemented' % opt.stage)
 
+    # Added by HMA
     board.flush()
     board.close()
     print('Finished test %s, named: %s!' % (opt.stage, opt.name))
